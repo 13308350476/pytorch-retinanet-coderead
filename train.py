@@ -35,6 +35,7 @@ def main(args=None):
     parser = parser.parse_args(args)
 
     # Create the data loaders
+    # MYNOTE： DATASET
     if parser.dataset == 'coco':
 
         if parser.coco_path is None:
@@ -65,15 +66,18 @@ def main(args=None):
 
     else:
         raise ValueError('Dataset type not understood (must be csv or coco), exiting.')
-
+    
+    # MYNOTE： create dataloder for train and sampler is overwrite
     sampler = AspectRatioBasedSampler(dataset_train, batch_size=2, drop_last=False)
     dataloader_train = DataLoader(dataset_train, num_workers=3, collate_fn=collater, batch_sampler=sampler)
 
+    # MYNOTE： DATASET dataloder for tedt
     if dataset_val is not None:
         sampler_val = AspectRatioBasedSampler(dataset_val, batch_size=1, drop_last=False)
         dataloader_val = DataLoader(dataset_val, num_workers=3, collate_fn=collater, batch_sampler=sampler_val)
 
     # Create the model
+    # MYNOTE： create the model which is a own lib
     if parser.depth == 18:
         retinanet = model.resnet18(num_classes=dataset_train.num_classes(), pretrained=True)
     elif parser.depth == 34:
@@ -93,6 +97,7 @@ def main(args=None):
         if torch.cuda.is_available():
             retinanet = retinanet.cuda()
 
+    # MYNOTE： transform data to cuda
     if torch.cuda.is_available():
         retinanet = torch.nn.DataParallel(retinanet).cuda()
     else:
@@ -100,17 +105,18 @@ def main(args=None):
 
     retinanet.training = True
 
+    # MYNOTE： create opt
     optimizer = optim.Adam(retinanet.parameters(), lr=1e-5)
-
+    # MYNOTE： what's this
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, verbose=True)
-
+    # MYNOTE： what's this
     loss_hist = collections.deque(maxlen=500)
-
+    # MYNOTE： what's this
     retinanet.train()
     retinanet.module.freeze_bn()
 
     print('Num training images: {}'.format(len(dataset_train)))
-
+    # MYNOTE： start train
     for epoch_num in range(parser.epochs):
 
         retinanet.train()

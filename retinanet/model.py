@@ -7,6 +7,7 @@ from retinanet.utils import BasicBlock, Bottleneck, BBoxTransform, ClipBoxes
 from retinanet.anchors import Anchors
 from retinanet import losses
 
+# MYNOTE：pretrain net
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
     'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
@@ -151,7 +152,7 @@ class ClassificationModel(nn.Module):
 
         return out2.contiguous().view(x.shape[0], -1, self.num_classes)
 
-
+# MYNOTE：the modle's body
 class ResNet(nn.Module):
 
     def __init__(self, num_classes, block, layers):
@@ -161,11 +162,12 @@ class ResNet(nn.Module):
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0])
+        self.layer1 = self._make_layer(block, 64, layers[0])  # MYNOTE：layer strid = 1
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
 
+        # MYNOTE：record out channels
         if block == BasicBlock:
             fpn_sizes = [self.layer2[layers[1] - 1].conv2.out_channels, self.layer3[layers[2] - 1].conv2.out_channels,
                          self.layer4[layers[3] - 1].conv2.out_channels]
@@ -209,7 +211,7 @@ class ResNet(nn.Module):
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample = nn.Sequential(
+            downsample = nn.Sequential(  # MYNOTE: use to skip add
                 nn.Conv2d(self.inplanes, planes * block.expansion,
                           kernel_size=1, stride=stride, bias=False),
                 nn.BatchNorm2d(planes * block.expansion),
@@ -235,18 +237,19 @@ class ResNet(nn.Module):
         else:
             img_batch = inputs
 
-        x = self.conv1(img_batch)
-        x = self.bn1(x)
-        x = self.relu(x)
+        x = self.conv1(img_batch) # MYNOTE：first layer 3->64; half
+        x = self.bn1(x)  # MYNOTE：normalize 
+        x = self.relu(x) # MYNOTE：relu
         x = self.maxpool(x)
 
+        # MYNOTE：4 layer UP
         x1 = self.layer1(x)
         x2 = self.layer2(x1)
         x3 = self.layer3(x2)
         x4 = self.layer4(x3)
-
-        features = self.fpn([x2, x3, x4])
-
+        # MYNOTE：3 layer down
+        features = self.fpn([x2, x3, x4])  # MYNOTE：features = [P3 P4 P5 P6 P7]
+        # MYNOTE：这两个的cat
         regression = torch.cat([self.regressionModel(feature) for feature in features], dim=1)
 
         classification = torch.cat([self.classificationModel(feature) for feature in features], dim=1)
@@ -297,7 +300,7 @@ class ResNet(nn.Module):
             return [finalScores, finalAnchorBoxesIndexes, finalAnchorBoxesCoordinates]
 
 
-
+# MYNOTE：wapper of model
 def resnet18(num_classes, pretrained=False, **kwargs):
     """Constructs a ResNet-18 model.
     Args:

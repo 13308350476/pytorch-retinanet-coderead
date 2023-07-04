@@ -430,20 +430,20 @@ class UnNormalizer(object):
         return tensor
 
 
-class AspectRatioBasedSampler(Sampler):
+class AspectRatioBasedSampler(Sampler):  #重写的自己的sampler
 
     def __init__(self, data_source, batch_size, drop_last):
-        self.data_source = data_source
+        self.data_source = data_source  #dataset 的变量
         self.batch_size = batch_size
-        self.drop_last = drop_last
+        self.drop_last = drop_last  #是否丢弃最后一个不足的batch
         self.groups = self.group_images()
 
-    def __iter__(self):
-        random.shuffle(self.groups)
+    def __iter__(self):  # 都要重写的
+        random.shuffle(self.groups) #shuffle group中的数据
         for group in self.groups:
             yield group
 
-    def __len__(self):
+    def __len__(self):  # 要重写的，在遍历的时候都要用的
         if self.drop_last:
             return len(self.data_source) // self.batch_size
         else:
@@ -451,7 +451,7 @@ class AspectRatioBasedSampler(Sampler):
 
     def group_images(self):
         # determine the order of the images
-        order = list(range(len(self.data_source)))
+        order = list(range(len(self.data_source)))  #建了个列表
         order.sort(key=lambda x: self.data_source.image_aspect_ratio(x))
 
         # divide into groups, one group = one batch
