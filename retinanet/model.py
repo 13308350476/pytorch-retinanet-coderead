@@ -245,11 +245,11 @@ class ResNet(nn.Module):
         # MYNOTE：4 layer UP
         x1 = self.layer1(x)
         x2 = self.layer2(x1)
-        x3 = self.layer3(x2)
+        x3 = self.layer3(x2) 
         x4 = self.layer4(x3)
         # MYNOTE：3 layer down
         features = self.fpn([x2, x3, x4])  # MYNOTE：features = [P3 P4 P5 P6 P7]
-        # MYNOTE：这两个的cat
+        # MYNOTE：这两个的cat查查 一阶段和二阶段的区别
         regression = torch.cat([self.regressionModel(feature) for feature in features], dim=1)
 
         classification = torch.cat([self.classificationModel(feature) for feature in features], dim=1)
